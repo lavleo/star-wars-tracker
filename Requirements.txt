@@ -1,0 +1,58 @@
+name: Update Timeline DB
+
+on:
+  # Run every Monday at 08:00 UTC
+  schedule:
+    - cron: "0 8 * * 1"
+
+  # Also allows a manual trigger from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # needed to push the updated DB back
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            build-essential \
+            libcurl4-openssl-dev \
+            libgumbo-dev \
+            libsqlite3-dev \
+            libcjson-dev \
+            sqlite3
+
+      - name: Build crawler
+        run: make
+
+      - name: Run crawler
+        run: ./sw_crawler
+
+      - name: Show crawl result
+        run: |
+          echo "── Entry count ──────────────────────────────"
+          sqlite3 starwars_timeline.db \
+            "SELECT COUNT(*) || ' active entries' FROM timeline WHERE active=1;"
+          sqlite3 starwars_timeline.db \
+            "SELECT COUNT(*) || ' completed' FROM timeline WHERE active=1 AND progress='Complete';"
+          echo "─────────────────────────────────────────────"
+
+      - name: Commit updated database
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add starwars_timeline.db
+          # Only commit if the DB actually changed
+          git diff --cached --quiet && echo "No changes to commit." || \
+            git commit -m "chore: update timeline DB [$(date -u '+%Y-%m-%d')]"
+
+      - name: Push changes
+        run: git push
