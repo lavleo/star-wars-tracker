@@ -1,0 +1,21 @@
+# Compiled binary
+sw_crawler
+
+# Database is intentionally tracked so GitHub Actions can commit crawl updates.
+# Your progress (the 'progress' and 'completed_at' columns) is preserved across
+# crawls because the crawler uses upserts, never plain deletes.
+# Do NOT add starwars_timeline.db here.
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
