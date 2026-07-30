@@ -32,6 +32,9 @@ jobs:
       - name: Build crawler
         run: make        # adjust if your build command/target differs
 
+      - name: Make crawler executable
+        run: chmod +x ./crawler
+
       - name: Run crawler
         run: ./crawler   # adjust to your actual compiled binary name/path
 
