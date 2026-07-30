@@ -1,15 +1,44 @@
-# .devcontainer/Dockerfile
-FROM mcr.microsoft.com/devcontainers/base:ubuntu
+name: Weekly Crawl
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libcurl4-openssl-dev \
-    libgumbo-dev \
-    libsqlite3-dev \
-    libcjson-dev \
-    sqlite3 \
-    python3 \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # every Monday at 06:00 UTC
+  workflow_dispatch: {}   # allows manual trigger from the Actions tab
 
-RUN pip3 install flask flask-limiter apscheduler --break-system-packages
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libcurl4-openssl-dev \
+            libgumbo-dev \
+            libsqlite3-dev \
+            libcjson-dev \
+            sqlite3 \
+            python3 \
+            python3-pip
+
+      - name: Install Python dependencies
+        run: pip3 install flask flask-limiter apscheduler --break-system-packages
+
+      - name: Build crawler
+        run: make        # adjust if your build command/target differs
+
+      - name: Run crawler
+        run: ./crawler   # adjust to your actual compiled binary name/path
+
+      - name: Commit updated database
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add *.db
+          git diff --quiet --cached || git commit -m "Automated weekly crawl update"
+          git push
